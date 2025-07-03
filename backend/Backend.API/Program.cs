@@ -1,13 +1,7 @@
-using AutoMapper;
-using Backend.API.Domain.Category.Commands;
-using Backend.API.Domain.Category.Queries;
-using Backend.API.Domain.Product.Commands;
-using Backend.API.Domain.Product.Queries;
-using Backend.Models;
+using Backend.API.Extensions;
 using Backend.Repository;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,7 +9,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Logger
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithProperty("Application", "Backend.API")
     .WriteTo.Console()
+    // .WriteTo.GrafanaLoki(
+    //     "GrafanaEndpoint",
+    //     new List<LokiLabel>
+    //     {
+    //         new() { Key = "app", Value = "api" },
+    //     },
+    //     credentials: new LokiCredentials
+    //     {
+    //         Login = builder.Configuration.GetSection("LokiConfiguration:Username").Value!,
+    //         Password = builder.Configuration.GetSection("LokiConfiguration:Password").Value!
+    //     })
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -35,14 +43,56 @@ builder.Services.AddDbContext<ProductManagementDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetSection("DatabaseConnectionString").Value);
 });
 
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetSection("DatabaseConnectionString").Value);
+
 // Http
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddCors();
 
+// OpenTelemetry
+var openTelemetryBuilder = builder.Services.AddOpenTelemetry();
+
+// Configure OpenTelemetry Resources with the application name
+openTelemetryBuilder.ConfigureResource(resource => resource
+    .AddService(builder.Environment.ApplicationName));
+
+// Add Metrics for ASP.NET Core and our custom metrics and export to Prometheus
+// openTelemetryBuilder.WithMetrics(metrics => metrics
+//     .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName))
+//     .AddMeter("Vitera.Api", "1.0")
+//     .AddAspNetCoreInstrumentation()
+//     .AddHttpClientInstrumentation()
+//     .AddOtlpExporter(opts =>
+//     {
+//         opts.Endpoint = new Uri("OpenTelemetryCollectorEndpoint");
+//         opts.Protocol = OtlpExportProtocol.HttpProtobuf;
+//         opts.TimeoutMilliseconds = 1000;
+//         opts.Headers = $"Authorization=Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"OpenTelCollectorUserName:OpenTelCollectorPassword"))}";
+//     })
+// );
+
 // ### APP ###
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ProductManagementDbContext>();
+
+    // Liste aller noch nicht angewendeten Migrations ermitteln
+    var pending = db.Database.GetPendingMigrations();
+    if (pending.Any())
+    {
+        Log.Information("Wende {Count} ausstehende Migration(en) an: {Migrations}", pending.Count(), pending);
+        db.Database.Migrate();
+    }
+    else
+    {
+        Log.Information("Keine ausstehenden Migrationen.");
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -50,117 +100,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 app.UseHttpsRedirection();
 
-// Products
-app.MapGet("/products", async (IMediator mediator, IMapper mapper) =>
+app.UseSerilogRequestLogging(options =>
 {
-    // Using MediatR to handle the query
-    var products = await mediator.Send(new GetAllProductsQuery()
+    // Optional: Customize the message template
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    
+    // Enrich the diagnostic context with e.g. User, QueryString, etc.
+    options.EnrichDiagnosticContext = (diagCtx, httpCtx) =>
     {
-        ReadOnly = true
-    });
-
-    // Mapping the products to DTOs if necessary
-    var mappedProducts = mapper.Map<IEnumerable<Backend.Contracts.DTO_s.Product.ReadProductDto>>(products);
-
-    return Results.Ok(mappedProducts);
+        diagCtx.Set("RequestHost", httpCtx.Request.Host.Value);
+        diagCtx.Set("UserAgent", httpCtx.Request.Headers["User-Agent"].ToString());
+        diagCtx.Set("ClientIP", httpCtx.Connection.RemoteIpAddress?.ToString());
+    };
 });
 
-app.MapGet("/products/{id:guid}", async ([FromRoute] Guid id, IMediator mediator, IMapper mapper) =>
-{
-    // Using MediatR to handle the query
-    var products = await mediator.Send(new GetProductByIdQuery()
-    {
-        ProductId = id,
-        ReadOnly = true
-    });
-
-    // Mapping the products to DTOs if necessary
-    var mappedProducts = mapper.Map<IEnumerable<Backend.Contracts.DTO_s.Product.ReadProductDto>>(products);
-
-    return Results.Ok(mappedProducts);
-});
-
-app.MapPost("/products", async (Backend.Contracts.DTO_s.Product.CreateProductDto dto, IMediator mediator, IMapper mapper) =>
-{
-    // Using MediatR to handle the command
-    var product = await mediator.Send(new CreateProductCommand(mapper.Map<ProductEntity>(dto)));
-
-    // Mapping the created product to DTOs if necessary
-    var mappedProduct = mapper.Map<Backend.Contracts.DTO_s.Product.ReadProductDto>(product);
-
-    return Results.Created($"/products/{mappedProduct.Id}", mappedProduct);
-});
-
-
-app.MapDelete("/products/{id:guid}", async ([FromRoute] Guid id, IMediator mediator) =>
-{
-    // Using MediatR to handle the command
-    await mediator.Send(new DeleteProductCommand(id));
-
-    return Results.NoContent();
-});
-
-// Categories
-app.MapGet("/categories", async (IMediator mediator, IMapper mapper) =>
-{
-    // Using MediatR to handle the query
-    var categories = await mediator.Send(new GetAllCategoriesQuery()
-    {
-        ReadOnly = true
-    });
-
-    // Mapping the categories to DTOs if necessary
-    var mappedCategories = mapper.Map<IEnumerable<Backend.Contracts.DTO_s.Category.ReadCategoryDto>>(categories);
-
-    return Results.Ok(mappedCategories);
-});
-
-app.MapGet("/categories/{id:guid}", async ([FromRoute] Guid id, IMediator mediator, IMapper mapper) =>
-{
-    // Using MediatR to handle the query
-    var category = await mediator.Send(new GetCategoryByIdQuery()
-    {
-        CategoryId = id,
-        ReadOnly = true
-    });
-
-    // Mapping the category to DTOs if necessary
-    var mappedCategory = mapper.Map<Backend.Contracts.DTO_s.Category.ReadCategoryDto>(category);
-
-    return Results.Ok(mappedCategory);
-});
-
-app.MapPost("/categories", async (Backend.Contracts.DTO_s.Category.CreateCategoryDto dto, IMediator mediator, IMapper mapper) =>
-{
-    // Using MediatR to handle the command
-    var category = await mediator.Send(new CreateCategoryCommand(mapper.Map<CategoryEntity>(dto)));
-
-    // Mapping the created category to DTOs if necessary
-    var mappedCategory = mapper.Map<Backend.Contracts.DTO_s.Category.ReadCategoryDto>(category);
-
-    return Results.Created($"/categories/{mappedCategory.Id}", mappedCategory);
-});
-
-app.MapPut("/categories/{id:guid}", async ([FromRoute] Guid id, Backend.Contracts.DTO_s.Category.UpdateCategoryDto dto, IMediator mediator, IMapper mapper) =>
-{
-    // Using MediatR to handle the command
-    var category = await mediator.Send(new UpdateCategoryCommand(mapper.Map<CategoryEntity>(dto)));
-
-    // Mapping the updated category to DTOs if necessary
-    var mappedCategory = mapper.Map<Backend.Contracts.DTO_s.Category.ReadCategoryDto>(category);
-
-    return Results.Ok(mappedCategory);
-});
-
-app.MapDelete("/categories/{id:guid}", async ([FromRoute] Guid id, IMediator mediator) =>
-{
-    // Using MediatR to handle the command
-    await mediator.Send(new DeleteCategoryCommand(id));
-
-    return Results.NoContent();
-});
+app.MapEndpoints();
 
 app.UseCors(x => x
     .AllowAnyOrigin()

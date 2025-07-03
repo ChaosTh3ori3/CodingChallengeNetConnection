@@ -40,4 +40,5 @@ public class ProductManagementDbContext(DbContextOptions<ProductManagementDbCont
         this.SetAuditFields();
         return await base.SaveChangesAsync(cancellationToken);
     }
+    
 }
