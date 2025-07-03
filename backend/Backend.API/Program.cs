@@ -1,7 +1,12 @@
 using AutoMapper;
-using Backend.Contracts;
+using Backend.API.Domain.Category.Commands;
+using Backend.API.Domain.Category.Queries;
+using Backend.API.Domain.Product.Commands;
+using Backend.API.Domain.Product.Queries;
+using Backend.Models;
 using Backend.Repository;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -25,7 +30,7 @@ builder.Services.AddMediatR(cfg =>
 });
 
 // Database
-builder.Services.AddDbContext<ExampleDbContext>(opt =>
+builder.Services.AddDbContext<ProductManagementDbContext>(opt =>
 {
     opt.UseNpgsql(builder.Configuration.GetSection("DatabaseConnectionString").Value);
 });
@@ -45,40 +50,116 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/weatherforecast", async (IMediator mediator, IMapper mapper) =>
+// Products
+app.MapGet("/products", async (IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the query
+    var products = await mediator.Send(new GetAllProductsQuery()
     {
-        var result = await mediator.Send(new Backend.API.Domain.GetAllWeatherForecastQuery());
-        
-        if (!result.Any()) 
-            return Results.NoContent();
-        
-        var mappedWeatherForecasts = mapper.Map<List<ReadWeatherForecastDto>>(result);
-        
-        return Results.Ok(mappedWeatherForecasts);
-    })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
+        ReadOnly = true
+    });
 
-app.MapPut("/weatherforecast", async (CreateWeatherForecastDto dto, IMediator mediator, IMapper mapper) =>
+    // Mapping the products to DTOs if necessary
+    var mappedProducts = mapper.Map<IEnumerable<Backend.Contracts.DTO_s.Product.ReadProductDto>>(products);
+
+    return Results.Ok(mappedProducts);
+});
+
+
+app.MapGet("/products/{id:guid}", async ([FromRoute] Guid id, IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the query
+    var products = await mediator.Send(new GetProductByIdQuery()
     {
-        try
-        {
-            var weatherForecastEntity = mapper.Map<Backend.Models.WeatherForecastEntity>(dto);
-            
-            var result = await mediator.Send(new Backend.API.Domain.CreateWeatherForecastCommand(weatherForecastEntity));
-            
-            return Results.Created($"/weatherforecast/{result.Id}", mapper.Map<ReadWeatherForecastDto>(result));
-        }
-        catch (Exception e)
-        {
-            return Results.Problem(
-                detail: e.Message,
-                statusCode: StatusCodes.Status500InternalServerError,
-                title: "An error occurred while creating the weather forecast entry."
-            );
-        }
-    })
-    .WithName("CreateWeatherForecast")
-    .WithOpenApi();
+        ProductId = id,
+        ReadOnly = true
+    });
+
+    // Mapping the products to DTOs if necessary
+    var mappedProducts = mapper.Map<IEnumerable<Backend.Contracts.DTO_s.Product.ReadProductDto>>(products);
+
+    return Results.Ok(mappedProducts);
+});
+
+
+app.MapPost("/products", async (Backend.Contracts.DTO_s.Product.CreateProductDto dto, IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the command
+    var product = await mediator.Send(new CreateProductCommand(mapper.Map<ProductEntity>(dto)));
+
+    // Mapping the created product to DTOs if necessary
+    var mappedProduct = mapper.Map<Backend.Contracts.DTO_s.Product.ReadProductDto>(product);
+
+    return Results.Created($"/products/{mappedProduct.Id}", mappedProduct);
+});
+
+
+app.MapDelete("/products/{id:guid}", async ([FromRoute] Guid id, IMediator mediator) =>
+{
+    // Using MediatR to handle the command
+    await mediator.Send(new DeleteProductCommand(id));
+
+    return Results.NoContent();
+});
+
+// Categories
+app.MapGet("/categories/all", async (IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the query
+    var categories = await mediator.Send(new GetAllCategoriesQuery()
+    {
+        ReadOnly = true
+    });
+
+    // Mapping the categories to DTOs if necessary
+    var mappedCategories = mapper.Map<IEnumerable<Backend.Contracts.DTO_s.Category.ReadCategoryDto>>(categories);
+
+    return Results.Ok(mappedCategories);
+});
+
+app.MapGet("/categories/{id:guid}", async ([FromRoute] Guid id, IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the query
+    var category = await mediator.Send(new GetCategoryByIdQuery()
+    {
+        CategoryId = id,
+        ReadOnly = true
+    });
+
+    // Mapping the category to DTOs if necessary
+    var mappedCategory = mapper.Map<Backend.Contracts.DTO_s.Category.ReadCategoryDto>(category);
+
+    return Results.Ok(mappedCategory);
+});
+
+app.MapPost("/categories", async (Backend.Contracts.DTO_s.Category.CreateCategoryDto dto, IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the command
+    var category = await mediator.Send(new CreateCategoryCommand(mapper.Map<CategoryEntity>(dto)));
+
+    // Mapping the created category to DTOs if necessary
+    var mappedCategory = mapper.Map<Backend.Contracts.DTO_s.Category.ReadCategoryDto>(category);
+
+    return Results.Created($"/categories/{mappedCategory.Id}", mappedCategory);
+});
+
+app.MapPut("/categories/{id:guid}", async ([FromRoute] Guid id, Backend.Contracts.DTO_s.Category.UpdateCategoryDto dto, IMediator mediator, IMapper mapper) =>
+{
+    // Using MediatR to handle the command
+    var category = await mediator.Send(new UpdateCategoryCommand(mapper.Map<CategoryEntity>(dto)));
+
+    // Mapping the updated category to DTOs if necessary
+    var mappedCategory = mapper.Map<Backend.Contracts.DTO_s.Category.ReadCategoryDto>(category);
+
+    return Results.Ok(mappedCategory);
+});
+
+app.MapDelete("/categories/{id:guid}", async ([FromRoute] Guid id, IMediator mediator) =>
+{
+    // Using MediatR to handle the command
+    await mediator.Send(new DeleteCategoryCommand(id));
+
+    return Results.NoContent();
+});
 
 app.Run();

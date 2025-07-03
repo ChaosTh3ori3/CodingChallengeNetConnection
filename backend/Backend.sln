@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.Contracts", "Backen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.Repository", "Backend.Repository\Backend.Repository.csproj", "{E23D206D-6BD2-479D-9349-CC07A3D41FAC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B868F12C-F6A6-424F-880E-54138B398419}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.Repository.Tests", "..\..\..\RiderProjects\Vitera\src\backend\Backend.Repository.Tests\Backend.Repository.Tests.csproj", "{42DBC9EF-AA32-40DA-BF5A-59BCEAB642B8}"
+EndProject
 Global
 				GlobalSection(SolutionConfigurationPlatforms) = preSolution
 								Debug|Any CPU = Debug|Any CPU
@@ -33,5 +37,12 @@ Global
 		{E23D206D-6BD2-479D-9349-CC07A3D41FAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E23D206D-6BD2-479D-9349-CC07A3D41FAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E23D206D-6BD2-479D-9349-CC07A3D41FAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42DBC9EF-AA32-40DA-BF5A-59BCEAB642B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42DBC9EF-AA32-40DA-BF5A-59BCEAB642B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42DBC9EF-AA32-40DA-BF5A-59BCEAB642B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42DBC9EF-AA32-40DA-BF5A-59BCEAB642B8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{42DBC9EF-AA32-40DA-BF5A-59BCEAB642B8} = {B868F12C-F6A6-424F-880E-54138B398419}
 	EndGlobalSection
 EndGlobal

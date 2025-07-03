@@ -1,5 +1,6 @@
 using AutoMapper;
-using Backend.Contracts;
+using Backend.Contracts.DTO_s.Category;
+using Backend.Contracts.DTO_s.Product;
 using Backend.Models;
 
 namespace Backend.API.General;
@@ -14,8 +15,13 @@ public class MappingProfile : Profile
      // CreateMap<CreateSourceDto, SourceModel>();
      // CreateMap<UpdateSourceDto, SourceModel>();
      
-     // WeatherForecast
-     CreateMap<WeatherForecastEntity, ReadWeatherForecastDto>();
-     CreateMap<CreateWeatherForecastDto, WeatherForecastEntity>();
+     // Category
+    CreateMap<CategoryEntity, ReadCategoryDto>();
+    CreateMap<CreateCategoryDto, CategoryEntity>();
+    
+    // Product
+    CreateMap<ProductEntity, ReadProductDto>()
+        .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category));
+    CreateMap<CreateProductDto, ProductEntity>();
  }
 }
