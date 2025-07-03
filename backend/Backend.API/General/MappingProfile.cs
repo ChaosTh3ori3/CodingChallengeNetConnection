@@ -22,6 +22,8 @@ public class MappingProfile : Profile
     // Product
     CreateMap<ProductEntity, ReadProductDto>()
         .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category));
-    CreateMap<CreateProductDto, ProductEntity>();
+    CreateMap<CreateProductDto, ProductEntity>()
+        .ForMember(dest => dest.Category,
+            opt => opt.MapFrom(src => new CategoryEntity { Id = src.CategoryId })); // Assuming Category is set separately
  }
 }

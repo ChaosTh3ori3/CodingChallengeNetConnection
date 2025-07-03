@@ -65,7 +65,6 @@ app.MapGet("/products", async (IMediator mediator, IMapper mapper) =>
     return Results.Ok(mappedProducts);
 });
 
-
 app.MapGet("/products/{id:guid}", async ([FromRoute] Guid id, IMediator mediator, IMapper mapper) =>
 {
     // Using MediatR to handle the query
@@ -80,7 +79,6 @@ app.MapGet("/products/{id:guid}", async ([FromRoute] Guid id, IMediator mediator
 
     return Results.Ok(mappedProducts);
 });
-
 
 app.MapPost("/products", async (Backend.Contracts.DTO_s.Product.CreateProductDto dto, IMediator mediator, IMapper mapper) =>
 {

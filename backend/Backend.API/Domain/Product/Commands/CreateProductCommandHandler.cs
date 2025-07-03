@@ -14,6 +14,7 @@ public class CreateProductCommandHandler(
 
         try
         {
+            dbContext.Attach(request.Product.Category);
             dbContext.Products.Add(request.Product);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
