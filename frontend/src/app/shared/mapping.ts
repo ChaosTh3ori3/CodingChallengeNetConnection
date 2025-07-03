@@ -13,9 +13,9 @@ export const mapper = createMapper({
 
 // category
 createMap(mapper, ReadCategoryDto, Category);
-createMap(mapper, Category, ReadCategoryDto);
-createMap(mapper, UpdateCategoryDto, Category);
+createMap(mapper, Category, CreateCategoryDto);
+createMap(mapper, Category, UpdateCategoryDto);
 
 //Product
-createMap(mapper, CreateCategoryDto, Product);
-createMap(mapper, Product, ReadProductDto);
+createMap(mapper, Product, CreateCategoryDto);
+createMap(mapper, ReadProductDto, Product);

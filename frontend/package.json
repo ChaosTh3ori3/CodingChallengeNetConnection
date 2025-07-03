@@ -23,6 +23,7 @@
     "@automapper/classes": "^8.8.1",
     "@automapper/core": "^8.8.1",
     "@ngrx/effects": "^19.2.1",
+    "@ngrx/signals": "^19.2.1",
     "@ngrx/store": "^19.2.1",
     "@ngrx/store-devtools": "^19.2.1",
     "rxjs": "~7.8.0",
