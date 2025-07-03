@@ -39,6 +39,8 @@ builder.Services.AddDbContext<ProductManagementDbContext>(opt =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors();
+
 // ### APP ###
 var app = builder.Build();
 
@@ -101,7 +103,7 @@ app.MapDelete("/products/{id:guid}", async ([FromRoute] Guid id, IMediator media
 });
 
 // Categories
-app.MapGet("/categories/all", async (IMediator mediator, IMapper mapper) =>
+app.MapGet("/categories", async (IMediator mediator, IMapper mapper) =>
 {
     // Using MediatR to handle the query
     var categories = await mediator.Send(new GetAllCategoriesQuery()
@@ -159,5 +161,10 @@ app.MapDelete("/categories/{id:guid}", async ([FromRoute] Guid id, IMediator med
 
     return Results.NoContent();
 });
+
+app.UseCors(x => x
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader()); // allow credentials
 
 app.Run();
