@@ -26,7 +26,7 @@ export class CategoryService {
         map((categories) => mapper.mapArray(categories, ReadCategoryDto, Category)),
         catchError((error) => {
           console.log(error);
-          return [];
+          return of([]);
         })
       );
   }

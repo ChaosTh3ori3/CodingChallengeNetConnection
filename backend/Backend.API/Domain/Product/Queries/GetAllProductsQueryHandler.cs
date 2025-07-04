@@ -14,16 +14,16 @@ public class GetAllProductsQueryHandler(
     {
         logger.LogDebug("Retrieving all products with ReadOnly set to {ReadOnly}.", request.ReadOnly);
         
-        var categoriesQuery = request.ReadOnly
+        var productsQuery = request.ReadOnly
             ? dbContext.ReadAllProductsAsReadOnly()
             : dbContext.ReadAllProducts();
-        
-        var categories = await categoriesQuery.ToListAsync(cancellationToken: cancellationToken);
 
-        if (categories.Any()) 
-            return categories;
-        
-        logger.LogWarning("No categories found.");
+        var products = await productsQuery.ToListAsync(cancellationToken: cancellationToken);
+
+        if (products.Any())
+            return products;
+
+        logger.LogWarning("No products found.");
         return [];
 
     }

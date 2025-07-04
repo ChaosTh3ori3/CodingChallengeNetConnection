@@ -1,11 +1,8 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {catchError, map, Observable, of} from 'rxjs';
-import {Category} from '../../models/Category';
-import {ReadCategoryDto} from '../../DTO´s/Category/ReadCategoryDto';
 import {environment} from '../../../../../environments/environment';
 import {mapper} from '../../mapping';
-import {CreateCategoryDto} from '../../DTO´s/Category/CreateCategoryDto';
 import {Product} from '../../models/Product';
 import {ReadProductDto} from '../../DTO´s/Product/ReadProductDto';
 import {CreateProductDto} from '../../DTO´s/Product/CreateProductDto';
@@ -27,7 +24,7 @@ export class ProductService {
         map((products) => mapper.mapArray(products, ReadProductDto, Product)),
         catchError((error) => {
           console.log(error);
-          return [];
+          return of([]);
         })
       );
   }
@@ -49,7 +46,7 @@ export class ProductService {
 
   public createProduct$(
     product: CreateProductDto
-  ): Observable<undefined | Category> {
+  ): Observable<undefined | Product> {
     return this.httpClient
       .post(environment.apiUrl + '/' + this.productsUrlSegment, product)
       .pipe(
