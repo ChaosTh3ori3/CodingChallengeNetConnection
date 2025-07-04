@@ -14,8 +14,8 @@ public class GetCategoryByIdQueryHandler(
         logger.LogInformation("Handling GetCategoryByIdQuery for CategoryId: {CategoryId}", request.CategoryId);
 
         var category = request.ReadOnly
-            ? await dbContext.ReadCategoryByIdAsync(request.CategoryId)
-            : await dbContext.ReadCategoryByIdAsyncAsReadOnly(request.CategoryId);
+            ? await dbContext.ReadCategoryByIdAsyncAsReadOnly(request.CategoryId)
+            : await dbContext.ReadCategoryByIdAsync(request.CategoryId);
 
         if (category == null)
         {

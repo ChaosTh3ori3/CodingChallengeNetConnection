@@ -15,8 +15,8 @@ public class GetProductByIdQueryHandler(
         logger.LogInformation("Handling GetProductByIdQuery for ProductId: {ProductId}", request.ProductId);
         
         var product = request.ReadOnly
-            ? await dbContext.ReadProductByIdAsync(request.ProductId)
-            : await dbContext.ReadProductByIdAsyncAsReadOnly(request.ProductId);
+            ? await dbContext.ReadProductByIdAsyncAsReadOnly(request.ProductId)
+            : await dbContext.ReadProductByIdAsync(request.ProductId);
 
         if (product == null)
         {
