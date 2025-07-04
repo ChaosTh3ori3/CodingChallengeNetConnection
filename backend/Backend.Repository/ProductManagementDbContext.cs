@@ -1,6 +1,7 @@
 using Backend.Models;
 using Backend.Repository.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Backend.Repository;
 
@@ -40,5 +41,4 @@ public class ProductManagementDbContext(DbContextOptions<ProductManagementDbCont
         this.SetAuditFields();
         return await base.SaveChangesAsync(cancellationToken);
     }
-    
 }

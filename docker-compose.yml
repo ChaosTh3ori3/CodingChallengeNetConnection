@@ -21,17 +21,12 @@ services:
       - '5000:5000'
     depends_on:
       - db
-  frontend:
-    build: ./frontend
-    restart: always
-    ports:
-      - '3000:3000'
-    depends_on:
-      - backend
+  # frontend:
+  #   build: ./frontend
+  #   restart: always
+  #   ports:
+  #     - '3000:3000'
+  #   depends_on:
+  #     - backend
 volumes:
   db-data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /path/to/your/local/db/data
-      o: bind
